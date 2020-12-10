@@ -1,63 +1,80 @@
 package bowling;
 
+import java.util.LinkedList;
+import java.util.List;
+
 public class NormalFrame implements Frame {
-    private int index;
-    private int score;
-    private Integer firstPitching;
-    private Integer secondPitching;
+    public static final int NORMAL_FRAME_MAX_PITCHING_SIZE = 2;
+    private final int index;
+    private final LinkedList<Pitching> pitchings;
+    private final Frame previousFrame;
+    private Frame nextFrame;
 
     public NormalFrame(int index) {
         this.index = index;
+        pitchings = new LinkedList<>();
+        this.previousFrame = null;
+    }
+
+    public NormalFrame(int index, Frame previousFrame) {
+        this.index = index;
+        pitchings = new LinkedList<>();
+        this.previousFrame = previousFrame;
+    }
+
+    public static Frame getFirstFrame() {
+        return new NormalFrame(1);
+    }
+
+    @Override
+    public Frame getNextFrame() {
+        return nextFrame;
+    }
+
+    @Override
+    public Frame initNextFrame() {
+        int nextFrameIndex = index + 1;
+        if (nextFrameIndex == BowlingGame.MAX_FRAME_SIZE) {
+            return nextFrame = new LastFrame(BowlingGame.MAX_FRAME_SIZE, this);
+        }
+
+        return nextFrame = new NormalFrame(nextFrameIndex, this);
     }
 
     @Override
     public void setKnockDownPins(int knockDownPins) {
-        if (firstPitching == null) {
-            firstPitching = knockDownPins;
+        if (pitchings.isEmpty()) {
+            pitchings.add(Pitching.getPitching(knockDownPins));
             return;
         }
 
-        secondPitching = knockDownPins;
+        Pitching previousPitching = pitchings.getLast();
+        pitchings.add(Pitching.getPitching(knockDownPins, previousPitching));
     }
 
     @Override
-    public String getStatus() {
-        if (firstPitching == null) {
-            return "";
-        }
-
-        if (firstPitching == 10) {
-            return "X";
-        }
-
-        if (secondPitching == null) {
-            if (firstPitching == 0) {
-                return "-";
-            }
-            return String.valueOf(firstPitching);
-        }
-
-        if (firstPitching + secondPitching == 10) {
-            return firstPitching + "|/";
-        }
-
-        if (secondPitching == 0) {
-            return firstPitching + "|-";
-        }
-
-        return firstPitching + "|" + secondPitching;
+    public List<Pitching> getStatus(){
+        return pitchings;
     }
 
     @Override
     public boolean isEnd() {
-        if (firstPitching == null) {
+        if (pitchings.isEmpty()) {
             return false;
         }
 
-        if (firstPitching == 10) {
+        if (pitchings.getFirst() == Pitching.STRIKE) {
             return true;
         }
 
-        return secondPitching != null;
+        return pitchings.size() == NORMAL_FRAME_MAX_PITCHING_SIZE;
+    }
+
+    @Override
+    public String toString() {
+        return "NormalFrame{" +
+                "index=" + index +
+                ", pitchings=" + pitchings +
+                '}';
     }
 }

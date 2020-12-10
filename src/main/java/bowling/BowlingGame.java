@@ -2,52 +2,49 @@ package bowling;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class BowlingGame {
-    public static void main(String[] args) {
-        List<Frame> frames = new ArrayList<>();
-        for (int i = 0; i < 9; i++) {
-            frames.add(new NormalFrame(i + 1));
-        }
+    public static final int MAX_FRAME_SIZE = 10;
+    private final List<Frame> frames;
+    private Frame currentFrame;
 
-        frames.add(new LastFrame(10));
+    private BowlingGame() {
+        frames = new ArrayList<>();
+        initFrames();
+    }
 
-        Scanner scanner = new Scanner(System.in);
-        int frameIndex = 0;
-        while (true) {
-            if (frameIndex >= frames.size()) {
-                break;
-            }
-            Frame frame = frames.get(frameIndex);
-            if (frame.isEnd()) {
-                frameIndex++;
-                continue;
-            }
+    public static BowlingGame init() {
+        return new BowlingGame();
+    }
 
-            int knockDownPins = Integer.parseInt(scanner.nextLine());
-            frame.setKnockDownPins(knockDownPins);
-            print(frames);
+    public void initFrames() {
+        Frame frame = NormalFrame.getFirstFrame();
+        currentFrame = frame;
+        frames.add(frame);
+
+        while (size() < MAX_FRAME_SIZE) {
+            frame = frame.initNextFrame();
+            frames.add(frame);
         }
     }
 
-    private static void print(List<Frame> frames) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("| NAME |");
-        for (int i = 1; i <= frames.size(); i++) {
-            sb.append("  ").append(String.format("%02d", i)).append("  |");
-        }
-        sb.append(System.lineSeparator());
-
-        sb.append("|  JSY |");
-        for (Frame frame : frames) {
-            sb.append(centerString(6, frame.getStatus())).append("|");
-        }
-
-        System.out.println(sb.toString());
+    public int size() {
+        return frames.size();
     }
 
-    public static String centerString (int width, String s) {
-        return String.format("%-" + width  + "s", String.format("%" + (s.length() + ((width - s.length()) / 2) + 1) + "s", s));
+    public boolean isEnd() {
+        return frames.get(MAX_FRAME_SIZE - 1).isEnd();
+    }
+
+    public void setKnockDownPins(int knockDownPins) {
+        if (currentFrame.isEnd()) {
+            currentFrame = currentFrame.getNextFrame();
+        }
+
+        currentFrame.setKnockDownPins(knockDownPins);
+    }
+
+    public List<Frame> getFrames() {
+        return frames;
     }
 }
