@@ -103,4 +103,14 @@ public class LastFramePitchings implements Pitchings {
     public Stream<Pitching> stream() {
         return value.stream();
     }
+
+    @Override
+    public List<Pitching> getValue() {
+        return value;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return value.isEmpty();
+    }
 }
