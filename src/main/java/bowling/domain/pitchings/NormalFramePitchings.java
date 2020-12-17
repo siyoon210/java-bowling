@@ -3,18 +3,10 @@ package bowling.domain.pitchings;
 import bowling.domain.KnockDownPins;
 import bowling.domain.Pitching;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Stream;
+import java.util.Optional;
 
-public class NormalFramePitchings implements Pitchings {
+public class NormalFramePitchings extends Pitchings {
     private static final int NORMAL_FRAME_MAX_PITCHING_SIZE = 2;
-    private final List<Pitching> value;
-
-    public NormalFramePitchings() {
-        this.value = new ArrayList<>();
-    }
 
     public static NormalFramePitchings getInstance() {
         return new NormalFramePitchings();
@@ -28,18 +20,6 @@ public class NormalFramePitchings implements Pitchings {
         }
 
         setSecondPitching(knockDownPins);
-    }
-
-    private void setFirstPitching(KnockDownPins knockDownPins) {
-        Pitching pitching = Pitching.getPitching(knockDownPins);
-        value.add(pitching);
-    }
-
-    private void setSecondPitching(KnockDownPins knockDownPins) {
-        int lastIndex = value.size() - 1;
-        Pitching previousPitching = value.get(lastIndex);
-        Pitching pitching = Pitching.getPitching(knockDownPins, previousPitching);
-        value.add(pitching);
     }
 
     @Override
@@ -61,22 +41,43 @@ public class NormalFramePitchings implements Pitchings {
     }
 
     @Override
-    public Iterator<Pitching> iterator() {
-        return value.iterator();
+    public Optional<Integer> getTotalScoreWithStrikeBonus(Optional<Pitching> optionalNextPitching, Optional<Pitching> optionalNextAndNextPitching) {
+        if (canNotCalculateStrikeBonus(optionalNextPitching, optionalNextAndNextPitching)) {
+            return Optional.empty();
+        }
+
+        Pitching nextPitching = optionalNextPitching.get();
+        Pitching nextAndNextPitching = optionalNextAndNextPitching.get();
+
+        Integer totalScore = calculateTotalScoreWithStrikeBonus(nextPitching, nextAndNextPitching);
+        return Optional.of(totalScore);
+    }
+
+    private boolean canNotCalculateStrikeBonus(Optional<Pitching> optionalNextPitching, Optional<Pitching> optionalNextAndNextPitching) {
+        return !optionalNextPitching.isPresent() || !optionalNextAndNextPitching.isPresent();
+    }
+
+    private Integer calculateTotalScoreWithStrikeBonus(Pitching nextPitching, Pitching nextAndNextPitching) {
+        if (nextAndNextPitching == Pitching.SPARE) {
+            return calculateTotalScore() + nextAndNextPitching.getScore();
+        }
+
+        return calculateTotalScore() + nextPitching.getScore() + nextAndNextPitching.getScore();
     }
 
     @Override
-    public Stream<Pitching> stream() {
-        return value.stream();
+    public Optional<Integer> calculateTotalScoreWithSpareBonus(Optional<Pitching> optionalNextPitching) {
+        if (canNotCalculateSpareBonus(optionalNextPitching)) {
+            return Optional.empty();
+        }
+
+        Pitching nextPitching = optionalNextPitching.get();
+
+        int score = calculateTotalScore() + nextPitching.getScore();
+        return Optional.of(score);
     }
 
-    @Override
-    public List<Pitching> getValue() {
-        return value;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return value.isEmpty();
+    private boolean canNotCalculateSpareBonus(Optional<Pitching> optionalNextPitching) {
+        return !optionalNextPitching.isPresent();
     }
 }

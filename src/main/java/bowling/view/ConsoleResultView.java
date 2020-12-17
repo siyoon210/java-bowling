@@ -1,11 +1,12 @@
 package bowling.view;
 
-import bowling.domain.BowlingGame;
 import bowling.domain.Pitching;
-import bowling.domain.frame.Frames;
+import bowling.domain.bowlinggame.BowlingGameViewDto;
+import bowling.domain.frames.FramesImpl;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -14,6 +15,7 @@ public class ConsoleResultView implements ResultView {
     private static final int CELL_WIDTH = 6;
     private static final String NAME_LABEL = "NAME";
     private static final String FRAME_INDEX_FORMAT = "%02d";
+    private static final String EMPTY_VALUE = "";
     private final Map<Pitching, String> stringByPitching;
 
     public ConsoleResultView() {
@@ -33,7 +35,7 @@ public class ConsoleResultView implements ResultView {
     }
 
     @Override
-    public void print(BowlingGame bowlingGame) {
+    public void print(BowlingGameViewDto bowlingGame) {
         StringBuilder resultBuilder = new StringBuilder();
         appendHeader(resultBuilder);
         appendBody(bowlingGame, resultBuilder);
@@ -52,28 +54,28 @@ public class ConsoleResultView implements ResultView {
     }
 
     private void appendFrameIndex(StringBuilder resultBuilder) {
-        IntStream.rangeClosed(1, Frames.MAX_FRAME_SIZE)
+        IntStream.rangeClosed(1, FramesImpl.MAX_FRAME_SIZE)
                 .forEach(index -> {
                     String formattedFrameIndex = centerString(String.format(FRAME_INDEX_FORMAT, index));
                     resultBuilder.append(formattedFrameIndex).append(DELIMITER);
                 });
     }
 
-    private void appendBody(BowlingGame bowlingGame, StringBuilder resultBuilder) {
+    private void appendBody(BowlingGameViewDto bowlingGame, StringBuilder resultBuilder) {
         appendPlayerName(bowlingGame, resultBuilder);
         appendResults(bowlingGame, resultBuilder);
         resultBuilder.append(System.lineSeparator());
         appendScore(bowlingGame, resultBuilder);
     }
 
-    private void appendPlayerName(BowlingGame bowlingGame, StringBuilder resultBuilder) {
+    private void appendPlayerName(BowlingGameViewDto bowlingGame, StringBuilder resultBuilder) {
         String formattedPlayerName = centerString(bowlingGame.getPlayerName().getValue());
         resultBuilder.append(DELIMITER).append(formattedPlayerName).append(DELIMITER);
     }
 
-    private void appendResults(BowlingGame bowlingGame, StringBuilder resultBuilder) {
-        bowlingGame.framesStream().forEach(frame -> {
-            String result = frame.getPitchings().stream()
+    private void appendResults(BowlingGameViewDto bowlingGame, StringBuilder resultBuilder) {
+        bowlingGame.framesViewDtoStream().forEach(frameViewDto -> {
+            String result = frameViewDto.getPitchings().stream()
                     .map(stringByPitching::get)
                     .collect(Collectors.joining(DELIMITER));
             String formattedResult = centerString(result);
@@ -81,19 +83,19 @@ public class ConsoleResultView implements ResultView {
         });
     }
 
-    private void appendScore(BowlingGame bowlingGame, StringBuilder resultBuilder) {
-        resultBuilder.append(DELIMITER).append(centerString("")).append(DELIMITER);
-        bowlingGame.framesStream().forEach(frame -> {
-            Integer score = frame.getTotalScore();
-            resultBuilder.append(formatScore(score)).append(DELIMITER);
+    private void appendScore(BowlingGameViewDto bowlingGame, StringBuilder resultBuilder) {
+        resultBuilder.append(DELIMITER).append(centerString(EMPTY_VALUE)).append(DELIMITER);
+        bowlingGame.framesViewDtoStream().forEach(frameViewDto -> {
+            Optional<Integer> totalScore = frameViewDto.getTotalScore();
+            resultBuilder.append(formatScore(totalScore)).append(DELIMITER);
         });
     }
 
-    private String formatScore(Integer score) {
-        if (score == null) {
-            return centerString("");
+    private String formatScore(Optional<Integer> totalScore) {
+        if (!totalScore.isPresent()) {
+            return centerString(EMPTY_VALUE);
         }
-        return centerString(String.valueOf(score));
+        return centerString(String.valueOf(totalScore.get()));
     }
 
     private String centerString(String value) {
