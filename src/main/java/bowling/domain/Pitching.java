@@ -38,7 +38,7 @@ public enum Pitching {
     }
 
     public static Pitching getPitching(KnockDownPins knockDownPins, Pitching previousPitching) {
-        if (previousPitching == SPARE) {
+        if (previousPitching == SPARE || previousPitching == STRIKE) {
             return getPitching(knockDownPins);
         }
 
@@ -65,9 +65,6 @@ public enum Pitching {
     }
 
     public Integer getScore() {
-        if (this == SPARE) {
-            return 10;
-        }
         return score;
     }
 }

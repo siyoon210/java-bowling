@@ -2,66 +2,88 @@ package bowling.domain.pitchings;
 
 import bowling.domain.KnockDownPins;
 import bowling.domain.Pitching;
+import bowling.domain.Score;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.LinkedList;
 import java.util.stream.Stream;
 
 public abstract class Pitchings implements Iterable<Pitching> {
-    protected final List<Pitching> value;
+    final LinkedList<Pitching> value;
+    private Score score;
 
-    public Pitchings() {
-        value = new ArrayList<>();
+    protected Pitchings() {
+        this.value = new LinkedList<>();
+        score = Score.ofMiss(0);
     }
 
-    public Optional<Pitching> getFirstPitching() {
-        if (value.isEmpty()) {
-            return Optional.empty();
+    public void addPitching(KnockDownPins knockDownPins) {
+        Pitching pitching = getPitching(knockDownPins);
+        value.add(pitching);
+        score = renewScore();
+    }
+
+    private Score renewScore() {
+        if (isStrike()) {
+            return Score.ofStrike();
         }
-        return Optional.of(value.get(0));
-    }
 
-    public Optional<Pitching> getSecondPitching() {
-        if (value.size() < 2) {
-            return Optional.empty();
-        }
-        return Optional.of(value.get(1));
-    }
-
-    public Stream<Pitching> stream() {
-        return value.stream();
-    }
-
-    public boolean contains(Pitching pitching) {
-        return value.contains(pitching);
-    }
-
-    public int calculateTotalScore() {
         if (isSpare()) {
-            return Pitching.SPARE.getScore();
+            return Score.ofSpare();
         }
 
+        return Score.ofMiss(calculatePitchingScore());
+    }
+
+    private int calculatePitchingScore() {
         return value.stream()
                 .mapToInt(Pitching::getScore)
                 .sum();
     }
 
-    private boolean isSpare() {
+    private Pitching getPitching(KnockDownPins knockDownPins) {
+        if (value.isEmpty()) {
+            return Pitching.getPitching(knockDownPins);
+        }
+
+        Pitching previousPitching = value.getLast();
+        return Pitching.getPitching(knockDownPins, previousPitching);
+    }
+
+    boolean isStrike() {
+        return value.contains(Pitching.STRIKE);
+    }
+
+    boolean isSpare() {
         return value.contains(Pitching.SPARE);
     }
 
-    protected void setFirstPitching(KnockDownPins knockDownPins) {
-        Pitching pitching = Pitching.getPitching(knockDownPins);
-        value.add(pitching);
+    public abstract boolean isEnd();
+
+    public Score applyBonusScoreTo(Score previousScore) {
+        Iterator<Pitching> iterator = value.iterator();
+        while (iterator.hasNext() && previousScore.leftBonusApplyChance()) {
+            Pitching pitching = iterator.next();
+            int bonusScore = getBonusScore(pitching);
+            previousScore = previousScore.addBonusScore(bonusScore);
+        }
+        return previousScore;
     }
 
-    protected void setSecondPitching(KnockDownPins knockDownPins) {
-        int lastIndex = value.size() - 1;
-        Pitching previousPitching = value.get(lastIndex);
-        Pitching pitching = Pitching.getPitching(knockDownPins, previousPitching);
-        value.add(pitching);
+    private int getBonusScore(Pitching pitching) {
+        if (pitching == Pitching.SPARE) {
+            Pitching firstPitching = value.get(0);
+            return 10 - firstPitching.getScore();
+        }
+        return pitching.getScore();
+    }
+
+    public Score getScore() {
+        return score;
+    }
+
+    public Stream<Pitching> stream() {
+        return value.stream();
     }
 
     @Override
@@ -69,11 +91,12 @@ public abstract class Pitchings implements Iterable<Pitching> {
         return value.iterator();
     }
 
-    public abstract void addPitching(KnockDownPins knockDownPins);
-
-    public abstract boolean isEnd();
-
-    public abstract Optional<Integer> getTotalScoreWithStrikeBonus(Optional<Pitching> nextPitching, Optional<Pitching> nextAndNextPitching);
-
-    public abstract Optional<Integer> calculateTotalScoreWithSpareBonus(Optional<Pitching> nextPitching);
+    @Override
+    public String toString() {
+        return "Pitchings2{" +
+                "value=" + value +
+                ", score=" + score +
+                ", isEnd()=" + isEnd() +
+                '}';
+    }
 }
