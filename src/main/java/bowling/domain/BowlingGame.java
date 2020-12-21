@@ -1,33 +1,49 @@
 package bowling.domain;
 
+import bowling.dto.PlayerDto;
 import bowling.dto.BowlingGameDto;
 
-public class BowlingGame {
-    private final Frames frames;
-    private final PlayerName playerName;
+import java.util.List;
+import java.util.stream.Collectors;
 
-    private BowlingGame(Frames frames, PlayerName playerName) {
-        this.frames = frames;
-        this.playerName = playerName;
+public class BowlingGame {
+    private final Players players;
+    private int currentFrameNo = 1;
+
+    private BowlingGame(PlayerNames playerNames) {
+        players = Players.of(playerNames);
     }
 
-    public static BowlingGame init(PlayerName playerName) {
-        return new BowlingGame(Frames.init(), playerName);
+    public static BowlingGame init(PlayerNames playerNames) {
+        return new BowlingGame(playerNames);
     }
 
     public void setKnockDownPins(KnockDownPins knockDownPins) {
-        frames.setKnockDownPins(knockDownPins);
+        Player player = players.getCurrentPlayer(currentFrameNo);
+        player.setKnockDownPins(knockDownPins);
+        if (players.isAllPlayerEndFrame(currentFrameNo)) {
+            currentFrameNo++;
+        }
+    }
+
+    public Player getCurrentPlayer() {
+        return players.getCurrentPlayer(currentFrameNo);
     }
 
     public boolean isEnd() {
-        return frames.isEnd();
-    }
-
-    public int getCurrentFrameNo() {
-        return frames.getCurrentFrameNo();
+        return players.isAllPlayerEndGame();
     }
 
     public BowlingGameDto convertToDto() {
-        return BowlingGameDto.of(frames.convertToDto(), playerName.getValue());
+        List<PlayerDto> playerDtos = players.convertToDto();
+        return BowlingGameDto.of(playerDtos);
+    }
+
+    @Override
+    public String toString() {
+        return "BowlingGame{" +
+                "players=" + players +
+                ", currentFrameNo=" + currentFrameNo +
+                '}';
     }
 }
